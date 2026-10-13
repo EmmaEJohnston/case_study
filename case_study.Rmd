@@ -8,3 +8,135 @@ What is data science? Revisited.
 
 * you need data skils most of the time 
 * but also intellectual curiosity, problem solving, collaboration 
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(p8105.datasets)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+
+data("nyc_airbnb")
+```
+
+# Some questions to answer with this dataset 
+
+* where are the most expensive airbnbs in nyc? 
+* which neighborhood has the highest concentration of airbnbs? 
+* which one is the cheapest? 
+* which airbnb hosts are the most/best reviewed?
+* has the number of airbnbs increased or decreased over time? 
+* do airbnbs affect rent in their neighborhoods? 
+* do descriptions correlate with price? 
+* what about text reviews? 
+
+
+```{r}
+nyc_airbnb = 
+  nyc_airbnb |>  
+  mutate(stars = review_scores_location / 2)
+```
+
+```{r}
+nyc_airbnb |> 
+  count(room_type, neighbourhood_group) |> 
+  pivot_wider(
+    names_from = room_type, 
+    values_from = n
+  )
+```
+
+```{r}
+nyc_airbnb |> 
+  filter(neighbourhood_group == "Manhattan") |> 
+  count(room_type, neighbourhood) |> 
+  pivot_wider(
+    names_from = room_type, 
+    values_from = n
+  )
+```
+Maybe remove shared rooms from analyses? there are not that many. Pivot wider just to make it easier for me to read
+
+# Price
+
+Least expensive 
+```{r}
+nyc_airbnb |> 
+  mutate(price_rank = min_rank(price)) |> 
+  filter(price_rank < 3) |> view()
+```
+
+Most expensive 
+```{r}
+nyc_airbnb |> 
+  group_by(neighbourhood_group) |> 
+  mutate(price_rank = min_rank(desc(price))) |> 
+  filter(price_rank < 2) |> 
+  view()
+```
+
+Plot it 
+```{r}
+nyc_airbnb |> 
+  ggplot(aes(x = price)) +
+  geom_histogram() 
+```
+
+Where are most air bnbs? what happens to the price distribution in each borough? 
+```{r}
+nyc_airbnb |> 
+  filter(price < 1000) |> 
+  ggplot(aes(x = price)) +
+  geom_histogram() +
+  facet_grid(room_type ~ neighbourhood_group)
+```
+
+Prices on average - use median because of outliers
+```{r}
+nyc_airbnb |>  
+  group_by(room_type, neighbourhood_group) |> 
+  summarize(
+    median_price = median(price)
+  ) |> 
+  pivot_wider(
+    names_from = room_type, 
+    values_from = median_price
+  )
+```
+
+Visualizing price distribution in neighborhoods in manhattan
+```{r}
+nyc_airbnb |> 
+  filter(neighbourhood_group == "Manhattan") |> 
+  filter(price < 500) |> 
+  filter(room_type != "Shared room") |> 
+  mutate(neighbourhood = fct_reorder(neighbourhood, price)) |> #reorder x axis according to price
+  ggplot(aes(x = neighbourhood, y = price)) +
+  geom_boxplot() +
+  facet_grid(. ~ room_type) +
+  theme(axis.text.x = element_text(angle = 90, hjust =1))
+  
+```
+turning axis labels 90 degrees 
+
+Most/best reviewed hosts
+```{r}
+nyc_airbnb |> 
+  filter(calculated_host_listings_count > 10)
+```
+
+
+
