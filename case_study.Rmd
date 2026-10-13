@@ -4,3 +4,7 @@ author: "Emma"
 date: "2026-10-13"
 output: github_document
 ---
+What is data science? Revisited. 
+
+* you need data skils most of the time 
+* but also intellectual curiosity, problem solving, collaboration 
