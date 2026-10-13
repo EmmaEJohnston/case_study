@@ -1,0 +1,6 @@
+---
+title: "case_study"
+author: "Emma"
+date: "2026-10-13"
+output: github_document
+---
