@@ -2,7 +2,7 @@
 title: "case_study"
 author: "Emma"
 date: "2026-10-13"
-output: github_document
+output: html_document
 ---
 What is data science? Revisited. 
 
@@ -11,6 +11,7 @@ What is data science? Revisited.
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(leaflet)
 library(p8105.datasets)
 
 knitr::opts_chunk$set(
@@ -72,14 +73,14 @@ Maybe remove shared rooms from analyses? there are not that many. Pivot wider ju
 
 # Price
 
-Least expensive 
+## Least expensive 
 ```{r}
 nyc_airbnb |> 
   mutate(price_rank = min_rank(price)) |> 
   filter(price_rank < 3) |> view()
 ```
 
-Most expensive 
+## Most expensive 
 ```{r}
 nyc_airbnb |> 
   group_by(neighbourhood_group) |> 
@@ -95,7 +96,7 @@ nyc_airbnb |>
   geom_histogram() 
 ```
 
-Where are most air bnbs? what happens to the price distribution in each borough? 
+## Where are most air bnbs? what happens to the price distribution in each borough? 
 ```{r}
 nyc_airbnb |> 
   filter(price < 1000) |> 
@@ -104,7 +105,7 @@ nyc_airbnb |>
   facet_grid(room_type ~ neighbourhood_group)
 ```
 
-Prices on average - use median because of outliers
+## Prices on average - use median because of outliers
 ```{r}
 nyc_airbnb |>  
   group_by(room_type, neighbourhood_group) |> 
@@ -117,7 +118,7 @@ nyc_airbnb |>
   )
 ```
 
-Visualizing price distribution in neighborhoods in manhattan
+## Visualizing price distribution in neighborhoods in manhattan
 ```{r}
 nyc_airbnb |> 
   filter(neighbourhood_group == "Manhattan") |> 
@@ -128,15 +129,58 @@ nyc_airbnb |>
   geom_boxplot() +
   facet_grid(. ~ room_type) +
   theme(axis.text.x = element_text(angle = 90, hjust =1))
-  
 ```
 turning axis labels 90 degrees 
 
-Most/best reviewed hosts
+## Most/best reviewed hosts
 ```{r}
 nyc_airbnb |> 
   filter(calculated_host_listings_count > 10)
 ```
 
+## visualize price some more
 
+Making a "map"
+```{r}
+nyc_airbnb |> 
+  filter(neighbourhood_group == "Manhattan") |> 
+  filter(room_type == "Entire home/apt") |> 
+  filter(price < 500) |> 
+  ggplot(aes(x = lat, y = long, color = price)) + 
+  geom_point(alpha = .5)
+```
+
+Make a leaflet map 
+```{r}
+pal = colorNumeric(
+  palette = "viridis", 
+  domain = nyc_airbnb |> pull(stars)
+)
+nyc_airbnb |> 
+  filter(neighbourhood_group == "Manhattan") |> 
+  filter(room_type == "Entire home/apt") |> 
+  filter(price < 500) |> 
+  sample_n(50) |> #take 50 rows at random so you don't break leaflet. can get rid of later. 
+  leaflet() |> 
+  addTiles() |> 
+  addCircleMarkers(~ lat, ~long, color = ~pal(stars), radius = .5) #circle markers instead of pins so they don't overlap as much, don't have to do this 
+```
+Can also add popup text (see course website page) 
+
+```{r}
+pal = colorNumeric(
+  palette = "viridis", 
+  domain = 1:500
+)
+
+nyc_airbnb |> 
+  filter(neighbourhood_group == "Manhattan") |> 
+  filter(room_type == "Entire home/apt") |> 
+  filter(price < 500) |> 
+  leaflet() |> 
+  addTiles() |> 
+  addCircleMarkers(
+    ~ lat, ~long, color = ~pal(price), radius = .5) #circle markers instead of pins so they don't overlap as much, don't have to do this 
+```
+Had to change to html to knit if you use leaflet. 
 
